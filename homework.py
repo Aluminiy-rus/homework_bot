@@ -40,7 +40,7 @@ logging.basicConfig(
 
 
 def send_message(bot, message):
-    """Отправляем сообщение"""
+    """Отправляем сообщение."""
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
         logging.info('удачная отправка сообщения в Telegram')
@@ -64,7 +64,7 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """Проверяем ответ API на корректность.."""
+    """Проверяем ответ API на корректность."""
     if not isinstance(response['homeworks'], list):
         raise TypeError("Значение по ключу 'homeworks' не является списком")
     else:
@@ -73,7 +73,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """При обновлении статуса анализируем ответ API"""
+    """При обновлении статуса анализируем ответ API."""
     homework_name = homework['homework_name']
     if homework['status'] not in HOMEWORK_STATUSES:
         logging.error(
@@ -87,7 +87,7 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """Проверяем доступность переменных окружения"""
+    """Проверяем доступность переменных окружения."""
     for key, value in ENV_CHECK_LIST.items():
         if value is False:
             logging.critical(f"Ошибка переменных окружения: '{key}'")
@@ -100,13 +100,9 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-
-    print(check_tokens())
     check_tokens()
-
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
-
     while True:
         try:
             response = get_api_answer(current_timestamp)
@@ -119,7 +115,6 @@ def main():
 
             current_timestamp = response.get('current_date')
             time.sleep(RETRY_TIME)
-
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message)
