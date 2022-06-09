@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -5,7 +6,6 @@ import time
 from http import HTTPStatus
 from urllib.error import HTTPError
 
-import json
 import requests
 import telegram
 from dotenv import load_dotenv
@@ -72,6 +72,11 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверяем ответ API на корректность."""
+    if response['homeworks'] is None:
+        logger.error(
+            "Ключ 'homeworks' не найден в ответе API"
+        )
+        raise KeyError("Ключ 'homeworks' не найден в ответе API")
     if not isinstance(response['homeworks'], list):
         raise TypeError("Значение по ключу 'homeworks' не является списком")
     homeworks = response['homeworks']
@@ -107,7 +112,7 @@ def check_tokens():
         if value is not None:
             logger.critical(f"Ошибка переменных окружения: '{key}'")
             raise KeyError("Ошибка переменных окружения")
-    if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID is not None:
+    if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
         return True
     else:
         return False
