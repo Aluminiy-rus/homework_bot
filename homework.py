@@ -72,34 +72,29 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверяем ответ API на корректность."""
-    if response['homeworks'] is None:
-        logger.error(
-            "Ключ 'homeworks' не найден в ответе API"
-        )
-        raise KeyError("Ключ 'homeworks' не найден в ответе API")
-    if not isinstance(response['homeworks'], list):
-        raise TypeError("Значение по ключу 'homeworks' не является списком")
-    homeworks = response['homeworks']
-    return homeworks
+    if response['homeworks'] is not None:
+        if not isinstance(response['homeworks'], list):
+            logger.error("Значение по ключу 'homeworks' не является списком")
+            raise TypeError(
+                "Значение по ключу 'homeworks' не является списком"
+            )
+        homeworks = response['homeworks']
+        return homeworks
+    logger.error("Ключ 'homeworks' не найден")
+    raise KeyError("Ключ 'homeworks' не найден")
 
 
 def parse_status(homework):
     """При обновлении статуса анализируем ответ API."""
     if 'homework_name' not in homework:
-        logger.error(
-            "Необнаружено имя домашней работы в ответе API"
-        )
-        raise KeyError("Обнаружено недокументированное имя домашней работы")
+        logger.error("Необнаружено имя домашней работы")
+        raise KeyError("Необнаружено имя домашней работы")
     homework_name = homework['homework_name']
     if 'status' not in homework:
-        logger.error(
-            "Необнаружен статус домашней работы в ответе API"
-        )
-        raise KeyError("Обнаружено недокументированное имя домашней работы")
+        logger.error("Необнаружен статус домашней работы")
+        raise KeyError("Необнаружен статус домашней работы")
     if homework['status'] not in HOMEWORK_STATUSES:
-        logger.error(
-            "Обнаружен недокументированный статус домашней работы в ответе API"
-        )
+        logger.error("Обнаружен недокументированный статус домашней работы")
         raise KeyError("Обнаружен недокументированный статус домашней работы")
     homework_status = homework['status']
     verdict = HOMEWORK_STATUSES[homework_status]
