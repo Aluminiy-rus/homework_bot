@@ -72,6 +72,9 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверяем ответ API на корректность."""
+    if isinstance(response, dict):
+        if 'homeworks' not in response:
+            raise KeyError("Ключ 'homeworks' не найден")
     if response['homeworks'] is not None:
         if not isinstance(response['homeworks'], list):
             logger.error("Значение по ключу 'homeworks' не является списком")
