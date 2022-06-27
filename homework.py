@@ -5,9 +5,11 @@ import sys
 import time
 from http import HTTPStatus
 from urllib.error import HTTPError
+from logging.handlers import RotatingFileHandler
 
 import requests
 import telegram
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -34,13 +36,13 @@ HOMEWORK_STATUSES = {
 
 logging.basicConfig(
     handlers=[
-        logging.StreamHandler(sys.stdout)
+        logging.StreamHandler(sys.stdout),
+        RotatingFileHandler('bot.log', maxBytes=2000, backupCount=10)
     ],
     format='%(asctime)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-invalid_chatid = []
 
 
 def send_message(bot, message):
@@ -56,6 +58,7 @@ def get_api_answer(current_timestamp):
     """Делаем запрос к API."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
+    # params = {'from_date': 0}     # для тестов работоспособности
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
         if response.status_code != HTTPStatus.OK.value:
@@ -63,6 +66,7 @@ def get_api_answer(current_timestamp):
             raise HTTPError('API возвращает код, отличный от 200')
         try:
             response = response.json()
+            print(response)
             return response
         except json.decoder.JSONDecodeError:
             logger.error('Не удалось преобразовать в JSON')
@@ -83,8 +87,8 @@ def check_response(response):
             )
         homeworks = response['homeworks']
         return homeworks
-    logger.error("Ключ 'homeworks' не найден")
-    raise KeyError("Ключ 'homeworks' не найден")
+    logger.error("Response не является словарем")
+    raise KeyError("Response не является словарем")
 
 
 def parse_status(homework):
@@ -107,9 +111,8 @@ def parse_status(homework):
 def check_tokens():
     """Проверяем доступность переменных окружения."""
     for key, value in ENV_CHECK_LIST.items():
-        if value is not None:
+        if not value:
             logger.critical(f"Ошибка переменных окружения: '{key}'")
-            raise KeyError("Ошибка переменных окружения")
     if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
         return True
     else:
@@ -120,14 +123,18 @@ def main():
     """Основная логика работы бота."""
     if check_tokens():
         bot = telegram.Bot(token=TELEGRAM_TOKEN)
+        # updater = telegram.Updater(token=TELEGRAM_TOKEN)
         current_timestamp = int(time.time())
+        last_message = ''
         while True:
             try:
                 response = get_api_answer(current_timestamp)
                 homeworks = check_response(response)
                 if homeworks:
                     message = parse_status(homeworks[0])
-                    send_message(bot, message)
+                    if last_message != message:
+                        last_message = message
+                        send_message(bot, message)
                 else:
                     logger.debug("Отсутствуют новые статусы домашней работы")
 
@@ -136,7 +143,9 @@ def main():
             except Exception as error:
                 message = f'Сбой в работе программы: {error}'
                 logger.error(message)
-                send_message(bot, message)
+                if last_message != message:
+                    last_message = message
+                    send_message(bot, message)
                 time.sleep(RETRY_TIME)
 
 
